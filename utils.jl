@@ -1,3 +1,83 @@
+using ProgressMeter
+#----------Mathematical tools----------#
+
+""" # Simpson's rule
+
+Numerical integration of a function using Simpson's rule.
+
+### Inputs:
+- f: array of function values
+- h: step size
+
+"""
+function Simpson(f,h)
+    Nf = length(f)
+    s  = 2.0*ones(Nf)
+    s[2:2:end-1] .*= 2.0
+    s[1] = s[end]  = 1.0
+    sum(s.*f)*h/3.0
+end
+
+""" # Simulated annealing
+"""
+
+function Simulated_Annealing(f, x0, T0, N, α)
+    dim = length(x0)
+    x = x0
+    T = T0
+    chain = zeros(N,dim)
+    for i in 1:N
+        x_new = x .+ randn(dim)
+        ΔE = f(x_new) - f(x)
+        if ΔE < 0
+            x = x_new
+        else
+            if rand() < exp(-ΔE/T)
+                x = x_new
+            end
+        end
+        T *= α
+
+        chain[i,:] = x
+    end
+    return x, chain
+end
+
+function wavefunction_optimizer(λ0, b0, c0, w0, T0, N, step ,learning_rate=0.99, xmin=-10, xmax=10, n=100000)
+    N_hidden = length(c0)
+    λ = λ0
+    λ_new = λ0
+    b = b0
+    c = c0
+    w = w0
+    T = T0
+    @showprogress for i in 1:N
+        #λ_new = λ + step*randn()
+        b_new = b .+ step*Complex.(randn(),randn())
+        c_new = c .+ step*Complex.(randn(N_hidden),randn(N_hidden))
+        w_new = w .+ step*Complex.(randn(N_hidden),randn(N_hidden))
+        ΔE = -(energy(λ_new, b_new, c_new, w_new,xmin, xmax, n) - energy(λ, b, c, w,xmin, xmax, n))
+        if ΔE < 0.
+            #λ = λ_new
+            b = b_new
+            c = c_new
+            w = w_new
+        else
+            if rand() < exp(-ΔE/T)
+            #    λ = λ_new
+                b = b_new
+                c = c_new
+                w = w_new
+            end
+        end
+        if i%100 == 0
+            println("Step: ", i, " Energy: ", energy(λ, b, c, w,xmin, xmax, n))
+        end
+        T *= learning_rate
+    end
+    return λ, b, c, w
+end
+
 """ # Quadratic RMB ansatz
 
 The energy of the RMB is given by the following expression:
@@ -46,49 +126,27 @@ function Ψ_G(x, λ, b, c,w)
     for i in 1:M
         prod *= 1+exp(c[i]+x*w[i])
     end
-    return exp(-λ*x^2+x*b)*prod
+    return exp.(-λ*x^2 .+ x*b)*prod
 end
 
-#----------Mathematical tools----------#
-
-""" # Simpson's rule
-
-Numerical integration of a function using Simpson's rule.
-
-### Inputs:
-- f: array of function values
-- h: step size
-
+""" # Physical energy
 """
-function Simpson(f,h)
-    Nf = length(f)
-    s  = 2.0*ones(Nf)
-    s[2:2:end-1] .*= 2.0
-    s[1] = s[end]  = 1.0
-    sum(s.*f)*h/3.0
-end
-
-""" # Simulated annealing
-"""
-
-function Simulated_Annealing(f, x0, T0, N, α)
-    dim = length(x0)
-    x = x0
-    T = T0
-    chain = zeros(N,dim)
-    for i in 1:N
-        x_new = x .+ randn(dim)
-        ΔE = f(x_new) - f(x)
-        if ΔE < 0
-            x = x_new
-        else
-            if rand() < exp(-ΔE/T)
-                x = x_new
-            end
-        end
-        T *= α
-
-        chain[i,:] = x
+function energy(λ, b, c, w, xmin=-10, xmax=10, n=100000)
+    x = range(xmin, xmax, length=n)
+    x_vec = Array(x)
+    h = sum(x[2:end].-x[1:end-1])/(length(x)-1)
+    y = Complex.(ones(length(x_vec)))
+    print(y[1])
+    y = Complex.(ones(length(x_vec)))
+    for (i,x_i) in enumerate(x_vec)
+        y[i] = Ψ_G(x_i,λ,b,c,w)
     end
-    return x, chain
+    d2ψ  =  (y[3:end] .- 2.0*y[2:end-1] .+ y[1:end-2]) ./ h^2  # FIXME: how can it be defined for an imaginary wf?
+    Tloc = -0.5.*d2ψ ./ y[2:end-1] # local kinetic energy
+    Vloc =  0.5.*x[2:end-1].^2 # local potential energy
+    Eloc =  Tloc .+ Vloc # local energy
+    return Simpson(y[2:end-1].^2 .* Eloc,h) / Simpson(y[2:end-1].^2,h) # expectation value of the energy
 end
+        
+
+    
