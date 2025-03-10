@@ -1,0 +1,182 @@
+\documentclass{book}
+%--------------------------------------Paquets--------------------------------------
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{verbatim} %Per fer comentaris llargs
+\usepackage[margin=2cm]{geometry}
+\usepackage{ wasysym }
+\usepackage{ gensymb }
+\usepackage{ragged2e}
+\usepackage{multicol}
+\usepackage{amssymb}
+\usepackage{physics}
+
+
+
+
+%--------------------------------------Comandes noves--------------------------------------
+
+
+\newcommand{\dparcial}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\E}[1]{\cdot 10^{#1}}
+
+\renewcommand{\baselinestretch}{1.125}
+
+
+\title{Variational RBM}
+\author{Pau Fargas Reixats}
+\date{January 2025}
+
+\begin{document}
+
+\maketitle
+
+\chapter{RBM ansatz for the 1D QHO}
+
+Hamiltonian:
+
+\[H=-\frac{1}{2}\partial_x^2+\frac{1}{2}x^2\]
+
+Ansatz:
+
+\[\Psi(x)=\sum_{\{\vec{h}\}}e^{xb+\vec{c}'\vec{h}+x\vec{W}\vec{h}}\]
+
+Where $\{\vec{h}\}$ means the sum over all the possible combinations of $\vec{h}$. Taking $h_i=\{0,1\}\ i = 1,\dots, M$ the wavefunction can be written as:
+
+\[\Psi(x)=e^{xb}\prod_{j=1}^M(1+e^{c_j+xW_j})\]
+
+And we define the function $\Gamma(x)=\prod_{j=1}^M(1+e^{c_j+xW_j})$ so that the wavefunction is written as:
+
+\[\Psi(x)=e^{xb}\Gamma(x)\]
+
+\section{Energy}
+
+Variational energy:
+
+\[E=\frac{\bra{\Psi}H\ket{\Psi}}{\bra{\Psi}\ket{\Psi}}=\frac{\bra{\Psi}T\ket{\Psi}}{\bra{\Psi}\ket{\Psi}}+\frac{\bra{\Psi}V\ket{\Psi}}{\bra{\Psi}\ket{\Psi}}\]
+
+Then:
+
+\[\braket{\Psi}{\Psi}=\int dx |\Psi(x)|^2=\int dx e^{2xb}\Gamma^2(x)\]
+
+\[\langle{T}\rangle_\Psi=-\frac12\int dx \Psi(x)\partial^2_x\Psi(x)\]
+
+\[\langle{V}\rangle_\Psi=\frac12\int dx \Psi^2(x)x^2\]
+
+Let's compute $\partial^2_x\Psi(x)$:
+
+\[\partial_x ^2\Psi = \sum_{\{\vec{h}\}}e^{x(b+\vec{W}\vec{h})+\vec{c}'\vec{h}}(b+\vec{W}\vec{h})^2\]
+
+And expanding the squared factor, we have three terms:
+
+\begin{itemize}
+    \item $\eta_1=b^2\sum_{\{\vec{h}\}}e^{x(b+\vec{W}\vec{h})+\vec{c}'\vec{h}}$
+    \item $\eta_2=2b\sum_{\{\vec{h}\}}e^{x(b+\vec{W}\vec{h})+\vec{c}'\vec{h}}\vec{W}\vec{h}$
+    \item $\eta_3=\sum_{\{\vec{h}\}}e^{x(b+\vec{W}\vec{h})+\vec{c}'\vec{h}}(\vec{W}\vec{h})^2$
+\end{itemize}
+
+TO WRITE
+
+Defining $\sigma_i=\sigma(c_i+W_i x) = \frac{1}{1+e^{-(c_i+W_i x)}}$, and $\vec{\sigma}=(\sigma_1,\sigma_2,\dots,\sigma_M)$, the energy reads:
+
+\[E=\frac{\int dx \Psi^2(x)\biggl\{-\frac{1}{2}\biggl[b^2+2b(\vec{W}\vec{\sigma})+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\biggr]+\frac{1}{2}x^2\biggr\}}{\int dx \Psi^2}\]
+
+\section{Gradient}
+
+Now we have to compute $\grad_\theta E=(\partial_b+\sum_k[\partial_{c_k}+\partial_{W_k}])E$:
+
+\[\grad_\theta E=\grad_\theta \bigg(\frac{\bra{\Psi}T\ket{\Psi}}{\bra{\Psi}\ket{\Psi}}+\frac{\bra{\Psi}V\ket{\Psi}}{\bra{\Psi}\ket{\Psi}}\bigg)=\frac{\grad_\theta(\ev{T}{\Psi}+\ev{V}{\Psi})}{\braket{\Psi}{\Psi}}-\frac{\ev{T}{\Psi}+\ev{V}{\Psi}}{\braket{\Psi}{\Psi}^2}\grad_\theta\braket{\Psi}{\Psi}\]
+
+Then, the problem is to compute $\grad_\theta(\ev{T}{\Psi}+\ev{V}{\Psi})$ and $\grad_\theta\braket{\Psi}{\Psi}$. Starting from the last one:
+
+\[\grad_\theta\braket{\Psi}{\Psi}=\grad_\theta\int dx\Psi^2=\int dx\grad_\theta\Psi^2=2\int dx \Psi(x)\grad_\theta \Psi\]
+
+Finally:
+
+\[\grad_\theta(\ev{T}{\Psi}+\ev{V}{\Psi})=\frac{1}{2}\grad_\theta \int dx \Psi^2(x)\biggl\{-\biggl[b^2+2b(\vec{W}\vec{\sigma})+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\biggr]+x^2\biggr\}\]
+
+\begin{align*}
+    \frac{1}{2}\grad_\theta \int dx \Psi^2(x)\underbrace{\biggl\{-\biggl[b^2+2b(\vec{W}\vec{\sigma})+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\biggr]+x^2\biggr\}}_\xi=\frac{1}{2}\int dx \grad_\theta (\Psi^2 \xi)=\\
+    \frac{1}{2}\int dx\grad_\theta (\Psi ^2)\xi+\Psi^2\grad_\theta \xi=\frac{1}{2}\int dx 2\Psi\grad_\theta(\Psi)\xi+\grad_\theta \xi
+\end{align*}
+
+Useful derivatives:
+
+\[\partial_b\Gamma(x)=0\]
+
+\[\partial_{c_k}\Gamma(x)=\Gamma(x)\sigma_k\]
+
+\[\partial_{W_k}\Gamma(x)=\Gamma(x)\sigma_k x\]
+
+\[\frac{d\sigma(x)}{dx}=\sigma(x)(1-\sigma(x))\]
+
+\[\partial_{c_k}\sigma_i=\sigma_i(1-\sigma_i)\partial_{c_k}(c_i+W_ix)=\sigma_i(1-\sigma_i)\delta_{ik}\]
+
+\[\partial_{W_k}\sigma_i=\sigma_i(1-\sigma_i)\partial_{W_k}(c_i+W_ix)=\sigma_i(1-\sigma_i)x\delta_{ik}\]
+
+\subsection{$\grad_\theta\xi$}
+
+\paragraph{w.r.t. $b$}
+
+\[\partial_b\xi=\partial_b\biggl\{-\biggl[b^2+2b(\vec{W}\vec{\sigma})+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\biggr]+x^2\biggr\}=-2(b+\vec{W}\vec{\sigma})\]
+
+\paragraph{w.r.t. $c_k$}
+
+\[\partial_{c_k}\xi=\partial_{c_k}\biggl\{-\biggl[\cancel{b^2}+2b(\vec{W}\vec{\sigma})+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\biggr]+\cancel{x^2}\biggr\}=-\partial_{c_k}\bigg[2b\vec{W}\vec{\sigma}+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\bigg]\]
+
+\[-2b\sum_i W_i\partial_{c_k}\sigma_i-\sum_{ij}W_iW_j\partial_{c_k}(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))=-2bW_k\sigma_k(1-\sigma_k)-W_k ^2\sigma_k(1-\sigma_k)-\sum_{i\neq j}W_iW_j\underbrace{\partial_{c_k}(\sigma_i\sigma_j)}_{(\delta_{ik}\sigma_j+\delta_{jk}\sigma_i)\sigma_k(1-\sigma_k)}\]
+
+\[-2bW_k\sigma_k(1-\sigma_k)-W_k ^2\sigma_k(1-\sigma_k)-\sum_{i\neq j}W_iW_j{(\delta_{ik}\sigma_j+\delta_{jk}\sigma_i)\sigma_k(1-\sigma_k)}\]
+
+\[\partial_{c_k}\xi=-2bW_k\sigma_k(1-\sigma_k)-W_k ^2\sigma_k(1-\sigma_k)-2\sum_{i\neq k}W_iW_k{\sigma_i\sigma_k(1-\sigma_k)}\]
+
+\paragraph{w.r.t. $W_k$}
+
+\[\partial_{W_k}\xi=\partial_{c_k}\biggl\{-\biggl[\cancel{b^2}+2b(\vec{W}\vec{\sigma})+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\biggr]+\cancel{x^2}\biggr\}=-\partial_{W_k}\bigg[2b\vec{W}\vec{\sigma}+\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\bigg]\]
+
+\[-2b\sum_i\underbrace{\partial_{W_k}(W_i\sigma_i)}_{\partial_{W_k}(W_i)\sigma_i+W_i\partial_{W_k}\sigma_i}-\underbrace{\partial_{W_k}\sum_{ij}W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))}_{\sum_{ij}\partial_{W_k}\bigg(W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\bigg)}\]
+
+For the first term we have:
+
+\[-2b\sum_i\bigg(\partial_{W_k}(W_i)\sigma_i+W_i\partial_{W_k}\sigma_i\bigg)=-2b\sum_i\bigg(\delta_{ik}\sigma_i+W_i\sigma_i(1-\sigma_i)x\delta_{ik}\bigg)=-2b(\sigma_k+W_k\sigma_k(1-\sigma_k)x)\]
+
+And for the second (remembering the minus for after):
+
+\begin{align*}
+    \sum_{ij}\partial_{W_k}\bigg(W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\bigg) &= \sum_i\partial_{W_k}(W_i ^2\sigma_i)+\sum_{i\neq j}\partial_{W_k}(W_iW_j\sigma_i\sigma_j)\\&=\sum_i\bigg(\partial_{W_k}(W_i^2)\cdot \sigma_i+W_i^2\partial_{W_k}\sigma_i\bigg)+\sum_{i\neq j}\partial_{W_k}(W_iW_j\sigma_i\sigma_j)\\&=\sum_i\bigg(2W_i\delta_{ik}\sigma_i+W_i^2\delta_{ik}\sigma_k(1-\sigma_k)x\bigg)+\sum_{i\neq j}\partial_{W_k}(W_iW_j\sigma_i\sigma_j)\\&=2W_k\sigma_k+W_k^2\sigma_k(1-\sigma_k)x+\sum_{i\neq j}\partial_{W_k}(W_iW_j\sigma_i\sigma_j)
+\end{align*}
+
+Then, the non-diagonal reads:
+
+\begin{align*}
+    \partial_{W_k}(W_iW_j\sigma_i\sigma_j)&= \partial_{W_k}(W_i)W_j \sigma_i\sigma_j\to \delta_{ik}W_j\sigma_i\sigma_j \\&+\partial_{W_k}(W_j)W_i\sigma_i\sigma_j\to \delta_{jk}W_i\sigma_i\sigma_j\\ &+\partial_{W_k}(\sigma_i) W_iW_j\sigma_j \to \delta_{ik}x\sigma_k(1-\sigma_k)W_iW_j\sigma_j\\ &+\partial_{W_k}(\sigma_j)W_iW_j\sigma_i \to \delta_{jk}x\sigma_k(1-\sigma_k)W_iW_j\sigma_i
+\end{align*}
+
+And adding everything together:
+
+\begin{align*}
+    \sum_{i\neq j}\partial_{W_k}(W_iW_j\sigma_i\sigma_j)&=\sum_{i\neq j}\bigg(\delta_{ik}W_j\sigma_i\sigma_j+\delta_{jk}W_i\sigma_i\sigma_j+\delta_{ik}x\sigma_k(1-\sigma_k)W_iW_j\sigma_j+\delta_{jk}x\sigma_k(1-\sigma_k)W_iW_j\sigma_i\bigg)\\&=2\sum_{i\neq k}(W_i\sigma_i\sigma_k+W_i\sigma_i\sigma_k(1-\sigma_k)xW_k)\\&=2(\sigma_k+x\sigma_k(1-\sigma_k)W_k)\vec{W}\vec{\sigma}
+\end{align*}
+
+Finally, we regroup all terms together:
+
+\[\sum_{ij}\partial_{W_k}\bigg(W_iW_j(\delta_{ij}\sigma_j+\sigma_i\sigma_j(1-\delta_{ij}))\bigg)=2W_k\sigma_k+W_k^2\sigma_k(1-\sigma_k)x+2(\sigma_k+x\sigma_k(1-\sigma_k)W_k)\vec{W}\vec{\sigma}\]
+
+Finally:
+
+\[\partial_{W_k}\xi=-\bigg[2b(\sigma_k+W_k\sigma_k(1-\sigma_k)x)+2W_k\sigma_k+W_k^2\sigma_k(1-\sigma_k)x+2(\sigma_k+x\sigma_k(1-\sigma_k)W_k)\vec{W}\vec{\sigma}\bigg]\]
+
+\section{Gaussian RBM}
+
+Let's try an ansatz of the shape:
+
+\[\Psi(x)=\sum_{\{\vec{h}\}}e^{-\lambda^2x^2+xb+\vec{c}'\vec{h}+x\vec{W}\vec{h}}\to\Psi(x)=e^{-\lambda^2x^2+xb}\prod_{j=1}^M(1+e^{c_j+xW_j})\]
+
+So that the energy of the RBM $E_{RBM}$ reads:
+
+\[E_{RBM}=-\lambda^2x^2+xb+\bf{c}'\bf{h}+x\bf{W}\bf{h}\]
+
+\end{document}
