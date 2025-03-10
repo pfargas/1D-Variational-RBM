@@ -179,4 +179,32 @@ So that the energy of the RBM $E_{RBM}$ reads:
 
 \[E_{RBM}=-\lambda^2x^2+xb+\bf{c}'\bf{h}+x\bf{W}\bf{h}\]
 
+\[E=\frac{\int\psi^*(x)\hat{H}\psi(x) dx}{\int|\psi|^2}\]
+
+Only numerator:
+
+\[\int\psi^*(x)\hat{H}\psi(x) dx=\int |\psi|^2\underbrace{\frac{\hat{H}\psi(x)}{\psi(x)}}_{E_{loc}}dx=\int|\psi|^2\bigg(-\frac{1}{2\psi(x)}\frac{\partial^2}{\partial x^2}\psi(x)+\frac12 x^2\bigg)\]
+
+Then, if $\bigg(\partial_x^2\psi(x)\bigg)_i\approx \frac{\psi_{i+1}-2\psi_i+\psi_{i-1}}{h^2}$:
+
+\[\int|\psi|^2\frac{\partial_x^2\psi}{\psi}dx\approx \int |\psi|^2\frac{\psi_{i+1}-2\psi_i+\psi_{i-1}}{\psi_ih^2}dx\]
+
+\section{Other way}
+
+To compute $\langle T\rangle_\Psi$ we can integrate by parts:
+
+\[\langle T\rangle_\Psi=-\frac{1}{2}\int^{+\infty}_{-\infty} dx \Psi^*(x)\partial_x^2\Psi(x) =-\frac{1}{2}\bigg\{ \eval{\Psi^*\partial_x \Psi}_{-\infty}^{+\infty}-\int_{-\infty}^{+\infty}dx(\partial_x\Psi^*)(\partial_x\Psi)\bigg\}\]
+
+And now we can apply the fact that $\displaystyle\lim_{x\to\pm\infty}\Psi(x)=0$ so that we obtain:
+
+\[\langle T\rangle_\Psi=\frac{1}{2}\int_{-\infty}^{+\infty}dx(\partial_x\Psi^*)(\partial_x\Psi)\]
+
+
+If $\Psi(x)\in\mathbb{R}$, then one can compute the kinetic expected value as:
+
+\[\langle T\rangle_\Psi=\frac{1}{2}\int_{-\infty}^{+\infty}dx(\partial_x\Psi)^2\]
+
+And the hamiltonian expected value is then:
+
+\[\langle\hat{H}\rangle=\frac{1}{2}\int_{-\infty}^{+\infty}dx\bigg(\big(\partial_x\Psi(x)\big)^2+x^2\Psi^2\bigg)\]
 \end{document}
