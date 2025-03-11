@@ -18,6 +18,32 @@ function Simpson(f,h)
     sum(s.*f)*h/3.0
 end
 
+"""# Numerical derivative
+The derivative of a function f(x) is defined as
+f'(x) = lim_{h->0} (f(x+h) - f(x))/h
+In practice, we can discretize space such that h = x_{i+1} - x_i
+and approximate the derivative as
+f'(x_i) = (f(x_{i+1}) - f(x_i))/h
+
+This function computes the derivative of a function f(x) given a vector of values f(x) at different points x.
+
+    ## Inputs:
+    - f: vector of values of the function f(x) at different points x
+    - xmin: minimum value of x
+    - xmax: maximum value of x
+    - n: number of points in which the derivative is computed
+
+    ## Outputs:
+    - df: vector of values of the derivative of f(x) at different points x
+
+"""
+function df(f, xmin=-10, xmax=10, n=100000)
+    x = range(xmin, xmax, length=n)
+    x_vec = Array(x)
+    h = sum(x[2:end].-x[1:end-1])/(length(x)-1)
+    return (f[2:end] .- f[1:end-1]) ./ (h)
+end
+
 """ # Simulated annealing
 """
 
@@ -86,7 +112,7 @@ The energy of the RMB is given by the following expression:
 
 And the wave function is given by:
 
-    ``Ψ(x)=∑_{h} exp(-λ x^2 + b x + c·h + xW·h)=exp(-λ x^2 + b x)∏_{i=1}^{M} (1+exp(c[i]+xw[i]))``
+``Ψ(x)=∑_{h} exp(-λ x^2 + b x + c·h + xW·h)=exp(-λ x^2 + b x)∏_{i=1}^{M} (1+exp(c[i]+xw[i]))``
 
 ### Inputs:
 - x: position
@@ -136,7 +162,6 @@ function energy(λ, b, c, w, xmin=-10, xmax=10, n=100000)
     x_vec = Array(x)
     h = sum(x[2:end].-x[1:end-1])/(length(x)-1)
     y = Complex.(ones(length(x_vec)))
-    print(y[1])
     y = Complex.(ones(length(x_vec)))
     for (i,x_i) in enumerate(x_vec)
         y[i] = Ψ_G(x_i,λ,b,c,w)
@@ -145,7 +170,7 @@ function energy(λ, b, c, w, xmin=-10, xmax=10, n=100000)
     Tloc = -0.5.*d2ψ ./ y[2:end-1] # local kinetic energy
     Vloc =  0.5.*x[2:end-1].^2 # local potential energy
     Eloc =  Tloc .+ Vloc # local energy
-    return Simpson(y[2:end-1].^2 .* Eloc,h) / Simpson(y[2:end-1].^2,h) # expectation value of the energy
+    return Simpson(abs.(y[2:end-1]).^2 .* Eloc,h) / Simpson(abs.(y[2:end-1]).^2,h) # expectation value of the energy
 end
         
 
