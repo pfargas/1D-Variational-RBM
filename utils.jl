@@ -166,7 +166,7 @@ function energy(λ, b, c, w, xmin=-10, xmax=10, n=100000)
     for (i,x_i) in enumerate(x_vec)
         y[i] = Ψ_G(x_i,λ,b,c,w)
     end
-    d2ψ  =  (y[3:end] .- 2.0*y[2:end-1] .+ y[1:end-2]) ./ h^2  # FIXME: how can it be defined for an imaginary wf?
+    d2ψ  =  (y[3:end] .- 2.0*y[2:end-1] .+ y[1:end-2]) ./ h^2 # second derivative
     Tloc = -0.5.*d2ψ ./ y[2:end-1] # local kinetic energy
     Vloc =  0.5.*x[2:end-1].^2 # local potential energy
     Eloc =  Tloc .+ Vloc # local energy
