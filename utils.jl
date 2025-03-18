@@ -173,5 +173,13 @@ function energy(λ, b, c, w, xmin=-10, xmax=10, n=100000)
     return real(Simpson(abs.(y[2:end-1]).^2 .* Eloc,h) / Simpson(abs.(y[2:end-1]).^2,h)) # expectation value of the energy
 end
         
-
+function energy_from_wf(y, xmin=-10, xmax=10, n=100000)
+    x = range(xmin, xmax, length=n)
+    h = sum(x[2:end].-x[1:end-1])/(length(x)-1)
+    d2ψ  =  (y[3:end] .- 2.0*y[2:end-1] .+ y[1:end-2]) ./ h^2 # second derivative
+    Tloc = -0.5.*d2ψ ./ y[2:end-1] # local kinetic energy
+    Vloc =  0.5.*x[2:end-1].^2 # local potential energy
+    Eloc =  Tloc .+ Vloc # local energy
+    return real(Simpson(abs.(y[2:end-1]).^2 .* Eloc,h) / Simpson(abs.(y[2:end-1]).^2,h)) # expectation value of the energy
+end
     
