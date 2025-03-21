@@ -223,4 +223,18 @@ with (supposing $\hat{V}=V(x)$):
     V_{loc}(x) = V(x)
 \end{cases}\]
 
+\section{Metropolis Algorithm}
+
+We want to sample from $\pi(x)$
+
+Acceptance probability:
+
+\[p = \min\bigg\{1,\frac{\pi(x')}{\pi(x)}\bigg\}\]
+
+In statistical physics, $\pi(x) \propto e^{-\beta E(x)}$. In our case, $E = \langle\hat{H}\rangle$
+
+\subsection{Parallel Tempering}
+
+The acceptance probability of an exchange is defined as a Metropolis step such that %TODO
+
 \end{document}
