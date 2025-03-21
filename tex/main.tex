@@ -197,14 +197,30 @@ To compute $\langle T\rangle_\Psi$ we can integrate by parts:
 
 And now we can apply the fact that $\displaystyle\lim_{x\to\pm\infty}\Psi(x)=0$ so that we obtain:
 
-\[\langle T\rangle_\Psi=\frac{1}{2}\int_{-\infty}^{+\infty}dx(\partial_x\Psi^*)(\partial_x\Psi)\]
+\[\langle T\rangle_\Psi=\frac{1}{2}\int_{-\infty}^{+\infty}dx(\partial_x\Psi^*)(\partial_x\Psi) = \frac{1}{2}\int_{-\infty}^{+\infty}dx||\partial_x\Psi||^2\]
 
 
 If $\Psi(x)\in\mathbb{R}$, then one can compute the kinetic expected value as:
 
 \[\langle T\rangle_\Psi=\frac{1}{2}\int_{-\infty}^{+\infty}dx(\partial_x\Psi)^2\]
 
-And the hamiltonian expected value is then:
+And the Hamiltonian expected value is then:
 
-\[\langle\hat{H}\rangle=\frac{1}{2}\int_{-\infty}^{+\infty}dx\bigg(\big(\partial_x\Psi(x)\big)^2+x^2\Psi^2\bigg)\]
+\[\langle\hat{H}\rangle=\frac{1}{2}\int_{-\infty}^{+\infty}dx\bigg(  \Psi ^*\big(\partial_x\Psi(x)\big)^2+x^2\Psi^2\bigg)\]
+
+\paragraph{Importance sampling} Multiplying everything by $\frac{\Psi}{\Psi}$ we have:
+
+\[\langle\hat{H}\rangle=\frac{1}{2}\int_{-\infty}^{+\infty}dx||\Psi||^2\underbrace{\bigg(\frac{||\partial_x\Psi||^2}{\Psi}+x^2\bigg)}_{E_{loc}(x)}\]
+
+So that:
+
+\[E_{loc}(x) = T_{loc}(x)+V_{loc}(x)\]
+
+with (supposing $\hat{V}=V(x)$):
+
+\[\begin{cases}
+    T_{loc}(x) = \frac{||\partial_x\Psi(x)||^2}{\Psi(x)}\\
+    V_{loc}(x) = V(x)
+\end{cases}\]
+
 \end{document}
