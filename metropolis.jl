@@ -37,6 +37,27 @@ function metropolis(Nsteps, f, initial_guess, step_size, gaussian_step=true ,arg
     return x, chain
 end
 
+function metropolis_energy(Nsteps, energy, initial_guess, step_size, gaussian_step=true ,T=1.f0, args...)
+    x = initial_guess
+    chain = zeros(Nsteps)
+    for i in 1:Nsteps
+        if gaussian_step
+            x_new = x + step_size*randn()
+        else
+            x_new = x + step_size*rand()
+        end
+        ΔE = energy(x_new, args...) - energy(x,args...)
+        if ΔE < 0
+            x = x_new
+        else
+            if rand() < exp(-ΔE/T)
+                x = x_new
+            end
+        end
+        chain[i] = x
+    end
+    return x, chain
+end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
@@ -46,16 +67,16 @@ if abspath(PROGRAM_FILE) == @__FILE__
     initial_guess = 0.0
     Nsteps = 1000000
     step_size = 0.1
-    x, chain = metropolis(Nsteps, f, initial_guess, step_size)
-
+    # x, chain = metropolis(Nsteps, f, initial_guess, step_size)
+    x, chain = metropolis_energy(Nsteps, f, initial_guess, step_size)
     x = range(-3, 3, length=1000)
 
 
     using PyPlot
     clf()
-    plot(x, 1/sqrt(2*π)*f.(x), label="True distribution")
+    # plot(x, 1/sqrt(2*π)*f.(x), label="True distribution")
     hist(chain, bins=100, density=true)
-    xlabel("Step")
+    xlabel("x")
     ylabel("Value")
     # logscale y
     # yscale("log")
