@@ -35,32 +35,35 @@ with metropolisparams we can define the number of steps that we want to do in ea
 
 function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams::MetropolisParams, f, initial_guess,args...)
     NTemps = PTParameters.NTemps
+    Nexchanges = PTParameters.Nexchanges
     TMax = PTParameters.TMax
     TMin = PTParameters.TMin
     NSteps = MetropolisParams.NSteps
     StepSize = MetropolisParams.StepSize
     GaussianStep = MetropolisParams.GaussianStep
-
     # temperatures = range(TMin, TMax, length=NTemps)
-
     # TN=T0*λ^N
-
     temperatures = TMax * (TMin/TMax).^(range(0, NTemps-1, length=NTemps))
-
+    # n = range(0, NTemps-1, length=NTemps)/(NTemps-1)
+    # temperatures = TMax.^(1 .-n).*TMin.^n
+    plot(temperatures)
+    title("Tmin=$(minimum(temperatures)) Tmax=$TMax")
+    # logscale in y axis
+    yscale("log")
+    savefig("out/temperatures.png")
+    clf()
     x = initial_guess*ones(NTemps)
     x = x .+ randn(NTemps)*0.1
     @info "Temperatures: $temperatures"
     @info "Initial guess: $x"
     total_chains = zeros(Nexchanges+1,NTemps, NSteps)
-
+    total_chains[1,:,1] = x
     @showprogress for step in 1:PTParameters.Nexchanges+1
         # Sampling step
-        chains = zeros(NTemps, NSteps)
-        for i in 1:NTemps # parallel!!!!!!!
-            # x, chain = metropolis(NSteps, f, x, StepSize, GaussianStep, args)
-            
-            x[i], total_chains[step ,i, :] = metropolis_energy(NSteps, f, x[i], StepSize, GaussianStep, temperatures[i], args)
-            #chains[1] is the chain of the first temperature, chains[2] is the chain of the second temperature, etc
+        Threads.@threads for i in 1:NTemps # parallel!!!!!!!
+
+            # TODO: can i change step characteristics to explore the space better?
+            x[i], total_chains[step ,i, :] = metropolis_energy(NSteps, f, x[i], StepSize, GaussianStep, temperatures[i], args...)
         end
         # Exchange step
         for i in 1:NTemps-1 # starting from highest temperature, going to lowest
@@ -68,54 +71,47 @@ function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams:
             ΔE_exchange = (f(total_chains[step, i, end], args...) - f(total_chains[step, i+1, end], args...)) * (1/temperatures[i] - 1/temperatures[i+1])
             if ΔE_exchange < 0
                 x[i], x[i+1] = x[i+1], x[i]
-                # append!(exchanges.Texchange, temperatures[i])
-                # append!(exchanges.ExchangeStep, i)
             else
                 if rand() < exp(-ΔE_exchange)
                     x[i], x[i+1] = x[i+1], x[i]
-                    # append!(exchanges.Texchange, temperatures[i])
-                    # append!(exchanges.ExchangeStep, i)
                 end
-            end
-        end
-        if step == PTParameters.Nexchanges+1
-            for i in 1:NTemps
-                _, total_chains[step, i, :] = metropolis_energy(NSteps, f, x[i], StepSize, GaussianStep, temperatures[i], args)
             end
         end
     end
     return total_chains[end,end,end], total_chains, exchanges
-
 end
 
 function flatten_chains(chains, temp_idx)
-    temp_chain = zeros(1)
+    temp_chain = ones(1)
     for j in 1:size(chains,1)
         append!(temp_chain, chains[j,temp_idx,:])
     end
-    return temp_chain
+    return temp_chain[2:end]
 end
 
-gaussian_energy_landscape(x,args...) = -5*exp(-x^2)-exp(-2*(x-2.5)^2)-exp(-(x+1.5)^2/5)+x^2/10
+gaussian_energy_landscape(x,args...) = -5*exp(-(x+2)^2/0.5)-exp(-2*(x-2.5)^2)+x^2/20
 plot_landscapes = true
 using PyPlot
 clf()
 if plot_landscapes
     x = range(-10, 10, length=1000)
     plot(x, gaussian_energy_landscape.(x))
+    # plot a vertical line in the minimum
+    axhline(y=minimum(gaussian_energy_landscape.(x)), color="red", linestyle="--")
     savefig("out/energy_landscape.png")
     clf()
 end
 
 #lets find the min with parallel tempering
 
-initial_guess = -.50
-TMax = 10.0
-TMin = 1.0
-NTemps = 100
-Nexchanges = 200
-NSteps = 100
-StepSize = 0.0001
+initial_guess = 2.1
+λ = 0.99
+TMax = 100.0
+TMin = TMax*λ
+NTemps = 1000
+Nexchanges = 100
+NSteps = 1000
+StepSize = 0.01
 GaussianStep = true
 
 PTParameters = PTParams(TMax, TMin, NTemps, Nexchanges)
@@ -149,7 +145,7 @@ chains1 = flatten_chains(chains, 1)
 # plot(lowest_temp_chain[size(lowest_temp_chain,1)-2*NSteps:end], label="T = $(round(range(TMax, TMin, length=NTemps)[NTemps], digits=2))")
 
 # for i in NTemps-2:NTemps
-for i in 1:5
+for i in NTemps-3:NTemps
     plot(flatten_chains(chains, i), label="T = $(round(range(TMax, TMin, length=NTemps)[i], digits=2))")
 end
 
@@ -157,3 +153,39 @@ title("$final")
 legend()
 savefig("out/chain.png")
 close(io)
+
+# using PyCall
+# @pyimport matplotlib.animation as anim
+# using PyPlot
+
+
+# fig, ax = PyPlot.subplots(nrows=1, ncols=1, figsize=(7, 2.5))
+# # ax1, ax2 = axes
+
+# low_T_chain = flatten_chains(chains, NTemps)
+
+# println(size(chains))
+
+# println(size(low_T_chain))
+
+# println()
+
+
+# function make_frame(i)
+#     ax.clear()
+#     ax.set_title("$(i+1)")
+#     ax.plot(x, gaussian_energy_landscape.(x))
+#     ax.plot(low_T_chain[i+1], gaussian_energy_landscape(low_T_chain[i+1]), "ro")
+    
+#     # ax1.clear()
+#     # ax2.clear()
+#     # ax1.imshow(A[:,:,i+1, 1])
+#     # ax2.imshow(A[:,:,i+1, 2])
+# end
+
+# N_iter_per_temp = size(low_T_chain,1)
+
+# frames = [N_iter_per_temp-200:N_iter_per_temp-1]
+
+# myanim = anim.FuncAnimation(fig, make_frame, frames=frames, interval=20, blit=false)
+# myanim[:save]("test2.gif", bitrate=-1)
