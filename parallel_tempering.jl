@@ -31,6 +31,9 @@ end
 
 with PTParams we define the number of temperatures, the max and min of them and generate a linspace of temperatures. Also we define how many times do we want to exchange the temperatures.
 with metropolisparams we can define the number of steps that we want to do in each time we sample from metropolis (aka the steps before an exchange)
+
+Should I use dictionaries as inputs instead of structs? maybe dicts are more flexible...
+
 """
 
 function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams::MetropolisParams, f, initial_guess,args...)
@@ -43,6 +46,7 @@ function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams:
     GaussianStep = MetropolisParams.GaussianStep
     # temperatures = range(TMin, TMax, length=NTemps)
     # TN=T0*λ^N
+    # TODO: we can have an arbitrary way of choosing the temperatures, Let the user decide.
     temperatures = TMax * (TMin/TMax).^(range(0, NTemps-1, length=NTemps))
     # n = range(0, NTemps-1, length=NTemps)/(NTemps-1)
     # temperatures = TMax.^(1 .-n).*TMin.^n
@@ -63,6 +67,8 @@ function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams:
         Threads.@threads for i in 1:NTemps # parallel!!!!!!!
 
             # TODO: can i change step characteristics to explore the space better?
+            # propose a state and metropolis accept reject. split into step choosing and metropolis accepting. Thought only to have energies, 
+            # so everything is an exponential
             x[i], total_chains[step ,i, :] = metropolis_energy(NSteps, f, x[i], StepSize, GaussianStep, temperatures[i], args...)
         end
         # Exchange step
