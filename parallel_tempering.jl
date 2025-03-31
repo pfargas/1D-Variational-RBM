@@ -1,6 +1,7 @@
 using ProgressMeter
 using Logging
 using Base.Threads
+using Random, Distributions
 
 io = open("log.log", "w+")
 logger = SimpleLogger(io)
@@ -57,11 +58,14 @@ function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams:
     savefig("out/temperatures.png")
     clf()
     x = initial_guess*ones(NTemps)
-    x = x .+ randn(NTemps)*0.1
+    # x = x .+ randn(NTemps)
+    d = Normal(0,1)
+    x = x .+ rand(d, NTemps)
     @info "Temperatures: $temperatures"
     @info "Initial guess: $x"
     total_chains = zeros(Nexchanges+1,NTemps, NSteps)
     total_chains[1,:,1] = x
+    count = 0
     @showprogress for step in 1:PTParameters.Nexchanges+1
         # Sampling step
         Threads.@threads for i in 1:NTemps # parallel!!!!!!!
@@ -75,27 +79,28 @@ function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams:
         for i in 1:NTemps-1 # starting from highest temperature, going to lowest
             # exchange for temperature i and i-1
             ΔE_exchange = (f(total_chains[step, i, end], args...) - f(total_chains[step, i+1, end], args...)) * (1/temperatures[i] - 1/temperatures[i+1])
+            ΔE_exchange = -f(total_chains[step, i, end], args...)/temperatures[i+1] - f(total_chains[step, i+1, end], args...)/temperatures[i]+f(total_chains[step, i, end], args...)/temperatures[i] + f(total_chains[step, i+1, end], args...)/temperatures[i+1]
             if ΔE_exchange < 0
                 x[i], x[i+1] = x[i+1], x[i]
-            else
-                if rand() < exp(-ΔE_exchange)
-                    x[i], x[i+1] = x[i+1], x[i]
-                end
+                count += 1
+            elseif rand() < exp(-ΔE_exchange)
+                x[i], x[i+1] = x[i+1], x[i]
             end
         end
     end
-    return total_chains[end,end,end], total_chains, exchanges
+    print(count)
+    return total_chains[end,end,end], total_chains
 end
 
 function flatten_chains(chains, temp_idx)
-    temp_chain = ones(1)
+    temp_chain = []
     for j in 1:size(chains,1)
         append!(temp_chain, chains[j,temp_idx,:])
     end
     return temp_chain[2:end]
 end
 
-gaussian_energy_landscape(x,args...) = -5*exp(-(x+2)^2/0.5)-exp(-2*(x-2.5)^2)+x^2/20
+gaussian_energy_landscape(x,args...) = -5*exp(-(x+2)^2) -exp(-2*(x-5.0)^2)
 plot_landscapes = true
 using PyPlot
 clf()
@@ -110,13 +115,13 @@ end
 
 #lets find the min with parallel tempering
 
-initial_guess = 2.1
-λ = 0.99
+initial_guess = -1.0
+λ = 0.7
 TMax = 100.0
 TMin = TMax*λ
-NTemps = 1000
+NTemps = 50
 Nexchanges = 100
-NSteps = 1000
+NSteps = 100
 StepSize = 0.01
 GaussianStep = true
 
@@ -127,7 +132,7 @@ exchanges = Exchanges([], [])
 
 quadratic_energy_landscape(x,args...) = x^2
 
-final, chains, _ = parallel_tempering(exchanges, PTParameters, MetropolisParameters, gaussian_energy_landscape, initial_guess)
+final, chains = parallel_tempering(exchanges, PTParameters, MetropolisParameters, gaussian_energy_landscape, initial_guess)
 
 chains1 = flatten_chains(chains, 1)
 
@@ -151,8 +156,12 @@ chains1 = flatten_chains(chains, 1)
 # plot(lowest_temp_chain[size(lowest_temp_chain,1)-2*NSteps:end], label="T = $(round(range(TMax, TMin, length=NTemps)[NTemps], digits=2))")
 
 # for i in NTemps-2:NTemps
-for i in NTemps-3:NTemps
-    plot(flatten_chains(chains, i), label="T = $(round(range(TMax, TMin, length=NTemps)[i], digits=2))")
+temperatures = TMax * (TMin/TMax).^(range(0, NTemps-1, length=NTemps))
+
+temp_labels = round.(temperatures, digits=2)
+
+for i in NTemps-1:NTemps
+    plot(flatten_chains(chains, i), label="T = $(temp_labels[i])")
 end
 
 title("$final")

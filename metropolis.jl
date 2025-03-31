@@ -1,3 +1,5 @@
+using Distributed
+
 """
 # Metropolis-Hastings algorithm
 
@@ -40,9 +42,11 @@ end
 function metropolis_energy(Nsteps, energy, initial_guess, step_size, gaussian_step=true ,T=1.f0, args...)
     x = initial_guess
     chain = zeros(Nsteps)
+    d = Normal(0,step_size)
     for i in 1:Nsteps
         if gaussian_step
-            x_new = x + step_size*randn()
+            # x_new = x + step_size*randn()
+            x_new = x + rand(d)
         else
             x_new = x + step_size*rand()
         end
