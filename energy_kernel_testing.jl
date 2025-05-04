@@ -11,7 +11,7 @@ function mock_energy_CUDA(x, energies)
     Nchains = size(x, 1)
     D = size(x, 2)
 
-    #for i in index:stride:Nchains # NO ENTENC COM FUNCIONA AIXO
+    #for i in index:stride:Nchains
         if i < Nchains
             # Inlining the Gaussian landscape calculation directly into the kernel
             μ1 = zero(Float64)  # μ1 = (0,0) (zero vector)
@@ -31,6 +31,35 @@ function mock_energy_CUDA(x, energies)
         end
 
    # end
+
+    return
+end
+
+function mock_energy_CUDA!(x, energies)
+    index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    stride = blockDim().x * gridDim().x
+    Nchains = size(x, 1)
+    D = size(x, 2)
+
+    for i in index:stride:Nchains
+
+        # Inlining the Gaussian landscape calculation directly into the kernel
+        μ1 = zero(Float64)  # μ1 = (0,0) (zero vector)
+        μ2 = 5.0  # μ2 = (5,5) (scalar for simplicity)
+        
+        s1 = zero(Float64)
+        s2 = zero(Float64)
+        
+        # Compute squared differences directly in the kernel
+        for j in 1:D
+            idx = (i-1)*D + j
+            s1 += (x[idx] - μ1)^2
+            s2 += (x[idx] - μ2)^2
+        end
+        energy = exp(-0.5 * s1) + 0.5 * exp(-0.5 * s2)  # Combine the Gaussian terms
+        energies[i] = energy
+
+    end
 
     return
 end
@@ -58,7 +87,7 @@ function mock_energy(x)
     return energies
 end
 
-NTemps = 1000
+NTemps = 512
 test = zeros(NTemps)
 x_tests = randn(NTemps, 2) # random initial guess
 energies_cpu = mock_energy(x_tests)
@@ -71,7 +100,7 @@ threads = 256
 
 blocks = cld(NTemps, threads)
 
-@cuda threads=threads blocks=blocks mock_energy_CUDA(x_tests, test)
+@cuda threads=threads blocks=blocks mock_energy_CUDA!(x_tests, test)
 
 # Copy the result back to the host
 energies = Array(test)
