@@ -157,7 +157,7 @@ end
 
 """ # Physical energy
 """
-function energy(λ, b, c, w, xmin=-10, xmax=10, n=100000)
+function energy(λ, b, c, w, xmin=-10, xmax=10, n=1000)
     x = range(xmin, xmax, length=n)
     x_vec = Array(x)
     h = sum(x[2:end].-x[1:end-1])/(length(x)-1)

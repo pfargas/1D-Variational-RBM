@@ -68,7 +68,7 @@ function parallel_tempering(exchanges, PTParameters::PTParams, MetropolisParams:
     count = 0
     @showprogress for step in 1:PTParameters.Nexchanges+1
         # Sampling step
-        Threads.@threads for i in 1:NTemps # parallel!!!!!!!
+        for i in 1:NTemps # parallel!!!!!!!
 
             # TODO: can i change step characteristics to explore the space better?
             # propose a state and metropolis accept reject. split into step choosing and metropolis accepting. Thought only to have energies, 
