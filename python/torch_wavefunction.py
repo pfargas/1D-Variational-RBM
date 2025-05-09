@@ -38,6 +38,9 @@ class WaveFunctionNN(nn.Module):
         
     def forward(self, x):
         add = 0
+        
+        # add = torch.sum(torch.log1p(torch.exp(self.c + x * self.w)), dim=1)
+        
         for i in range(self.Nh//2):
             add += torch.log1p(torch.exp(self.c[i]+x*self.w[i]))
         return torch.exp(-0.5*x**2 + x*self.b + add)
@@ -50,6 +53,47 @@ def torch_abs2(x):
         result = torch.real(x**2)
     return result
 
+class WaveFunctionRBM_OHE(nn.Module):
+    
+    def __init__(self, Nv = 50, Nh = 10):
+        super(WaveFunctionRBM_OHE, self).__init__()
+        self.b = nn.Parameter(torch.randn(Nv, dtype=torch.float32, device=device))
+        self.c = nn.Parameter(torch.randn(Nh, dtype=torch.float32, device=device))
+        self.w = nn.Parameter(torch.randn(Nv,Nh, dtype=torch.float32, device=device))
+        self.Nh = Nh
+        self.Nv = Nv
+        self.xmin = -10
+        self.xmax = 10
+        self.dx = (self.xmax - self.xmin) / (self.Nv - 1)
+
+    def forward(self, x):
+        # Compute indices for one-hot encoding
+        indices = ((x - self.xmin) / self.dx).long()  # [batch_size] tensor of ints
+
+        # Clamp indices to be within valid range
+        indices = torch.clamp(indices, 0, self.Nv - 1)
+        # batch size is basically the number of points in the interval of computation
+        # Nv is the discretization of the interval
+        # Create one-hot encoded input: shape [batch_size, Nv]
+        v = torch.zeros((x.shape[0], self.Nv), dtype=torch.float32, device=x.device)
+        v.scatter_(1, indices.unsqueeze(1), 1.0)
+
+        # Compute product over hidden units
+        exponent = self.c + v @ self.w  # shape [batch_size, Nh]
+        prod = torch.prod(1 + torch.exp(exponent), dim=1)  # shape [batch_size]
+
+        # Final output
+        output = torch.exp(v @ self.b) * prod  # shape [batch_size]
+        return output
+
+    # def forward(self, x):
+    #     # one-hot encoding
+    #     v = torch.zeros(self.Nv, dtype=torch.int8, device=device)
+    #     v[int((x - self.xmin) / self.dx)] = 1
+    #     prod = 1
+    #     for i in range(self.Nh):
+    #         prod *= 1+torch.exp(self.c[i] + v @ self.w[:, i])
+    #     return torch.exp(v @ self.b)*prod
 class WaveFunctionMLP(nn.Module):
     
     def __init__(self, layer_dims=[1,60,60,1]):
@@ -117,6 +161,7 @@ def train_wavefunction(model, x_train, epochs=1000, lr=1e-2, print_interval=100,
         numerator = torch.trapezoid(torch.conj(psi) * H_psi, x_train, dim=0)
         denominator = torch.trapezoid(torch_abs2(psi), x_train, dim=0)
         energy = numerator / denominator
+        energy = energy.real
 
         loss = energy.real
         if previous_wavefunctions:
@@ -132,7 +177,7 @@ def train_wavefunction(model, x_train, epochs=1000, lr=1e-2, print_interval=100,
         loss.squeeze().backward()
         optimizer.step()
 
-        energy_history.append(energy.item())
+        energy_history.append(energy.item().real)
         
         if save_wavefunction_history and epoch%10==0 :
             norm=torch.sqrt(torch.sum(psi**2)*dx)
@@ -141,7 +186,7 @@ def train_wavefunction(model, x_train, epochs=1000, lr=1e-2, print_interval=100,
 
         
         if epoch % print_interval == 0:
-            print(f"Epoch {epoch}: Energy = {energy.item():.6f}")
+            print(f"Epoch {epoch}: Energy = {energy.item().real:.6f}")
         
         if callback is not None:
             callback(epoch, energy.item(), model)
