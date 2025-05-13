@@ -147,7 +147,15 @@ def train_wavefunction(model, x_train, epochs=1000, lr=1e-2, print_interval=100,
     dx = (x_train[1] - x_train[0]).real  # Real-valued step size
 
     energy_history = []
-    wave_function_history = []
+
+    if save_wavefunction_history:
+        wave_function_history = []
+        psi = model(x_train)
+        norm=torch.sqrt(torch.sum(psi**2)*dx)
+        psi_normalized=psi/norm
+        wave_function_history.append(psi_normalized.detach().cpu().numpy())
+    else:
+        wave_function_history = None
 
     for epoch in range(epochs):
         optimizer.zero_grad()
