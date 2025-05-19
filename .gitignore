@@ -28,3 +28,4 @@ Manifest.toml
 */out
 /out
 *.log
+*/__pycache__/
